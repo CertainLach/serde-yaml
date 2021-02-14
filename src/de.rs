@@ -57,6 +57,17 @@ use yaml_rust::scanner::{Marker, TScalarStyle, TokenType};
 /// ```
 pub struct Deserializer<'a> {
     input: Input<'a>,
+    quirks: DeserializingQuirks,
+}
+
+/// Handling of nonstandard yaml features
+#[derive(Default, Clone)]
+pub struct DeserializingQuirks {
+    /// Support yaml 1.1 octal literal
+    ///
+    /// I.e 0123 should be deserialized as string "0123" in yaml 1.2,
+    /// but some yaml parsers deserialize it as number 83 per yaml 1.1 spec
+    pub old_octals: bool,
 }
 
 enum Input<'a> {
@@ -68,16 +79,35 @@ enum Input<'a> {
 }
 
 impl<'a> Deserializer<'a> {
+    /// Creates a YAML deserializer from a `&str` and set quirks.
+    pub fn from_str_with_quirks(s: &'a str, quirks: DeserializingQuirks) -> Self {
+        let input = Input::Str(s);
+        Deserializer { input, quirks }
+    }
+
     /// Creates a YAML deserializer from a `&str`.
     pub fn from_str(s: &'a str) -> Self {
-        let input = Input::Str(s);
-        Deserializer { input }
+        Self::from_str_with_quirks(s, Default::default())
+    }
+
+    /// Creates a YAML deserializer from a `&[u8]` and set quirks.
+    pub fn from_slice_with_quirks(v: &'a [u8], quirks: DeserializingQuirks) -> Self {
+        let input = Input::Slice(v);
+        Deserializer { input, quirks }
     }
 
     /// Creates a YAML deserializer from a `&[u8]`.
     pub fn from_slice(v: &'a [u8]) -> Self {
-        let input = Input::Slice(v);
-        Deserializer { input }
+        Self::from_slice_with_quirks(v, Default::default())
+    }
+
+    /// Creates a YAML deserializer from an `io::Read` and set quirks.
+    pub fn from_reader_with_quirks<R>(rdr: R, quirks: DeserializingQuirks) -> Self
+    where
+        R: io::Read + 'a,
+    {
+        let input = Input::Read(Box::new(rdr));
+        Deserializer { input, quirks }
     }
 
     /// Creates a YAML deserializer from an `io::Read`.
@@ -89,8 +119,7 @@ impl<'a> Deserializer<'a> {
     where
         R: io::Read + 'a,
     {
-        let input = Input::Read(Box::new(rdr));
-        Deserializer { input }
+        Self::from_reader_with_quirks(rdr, Default::default())
     }
 
     fn de<T>(self, f: impl FnOnce(&mut DeserializerFromEvents) -> Result<T>) -> Result<T> {
@@ -102,6 +131,7 @@ impl<'a> Deserializer<'a> {
                 pos: &mut pos,
                 path: Path::Root,
                 remaining_depth: 128,
+                quirks: self.quirks.clone(),
             })?;
             multidoc.pos.store(pos, Ordering::Relaxed);
             return Ok(t);
@@ -118,6 +148,7 @@ impl<'a> Deserializer<'a> {
             pos: &mut pos,
             path: Path::Root,
             remaining_depth: 128,
+            quirks: self.quirks.clone(),
         })?;
         if pos == loader.events.len() {
             Ok(t)
@@ -175,6 +206,7 @@ impl<'de> Iterator for Deserializer<'de> {
                 return if pos < multidoc.loader.events.len() {
                     Some(Deserializer {
                         input: Input::Multidoc(Arc::clone(multidoc)),
+                        quirks: self.quirks.clone(),
                     })
                 } else {
                     None
@@ -183,6 +215,7 @@ impl<'de> Iterator for Deserializer<'de> {
             Input::Fail(err) => {
                 return Some(Deserializer {
                     input: Input::Fail(Arc::clone(err)),
+                    quirks: self.quirks.clone(),
                 });
             }
             _ => {}
@@ -202,6 +235,7 @@ impl<'de> Iterator for Deserializer<'de> {
                 } else {
                     Some(Deserializer {
                         input: Input::Multidoc(multidoc),
+                        quirks: self.quirks.clone(),
                     })
                 }
             }
@@ -210,6 +244,7 @@ impl<'de> Iterator for Deserializer<'de> {
                 self.input = Input::Fail(Arc::clone(&fail));
                 Some(Deserializer {
                     input: Input::Fail(fail),
+                    quirks: self.quirks.clone(),
                 })
             }
         }
@@ -508,6 +543,7 @@ struct DeserializerFromEvents<'a> {
     pos: &'a mut usize,
     path: Path<'a>,
     remaining_depth: u8,
+    quirks: DeserializingQuirks,
 }
 
 impl<'a> DeserializerFromEvents<'a> {
@@ -539,6 +575,7 @@ impl<'a> DeserializerFromEvents<'a> {
                     pos,
                     path: Path::Alias { parent: &self.path },
                     remaining_depth: self.remaining_depth,
+                    quirks: self.quirks.clone(),
                 })
             }
             None => panic!("unresolved alias: {}", *pos),
@@ -683,6 +720,7 @@ fn visit_scalar<'de, V>(
     style: TScalarStyle,
     tag: &Option<TokenType>,
     visitor: V,
+    quirks: &DeserializingQuirks,
 ) -> Result<V::Value>
 where
     V: Visitor<'de>,
@@ -714,7 +752,7 @@ where
             visitor.visit_str(v)
         }
     } else {
-        visit_untagged_str(visitor, v)
+        visit_untagged_str(visitor, quirks, v)
     }
 }
 
@@ -742,6 +780,7 @@ impl<'de, 'a, 'r> de::SeqAccess<'de> for SeqAccess<'a, 'r> {
                         index: self.len,
                     },
                     remaining_depth: self.de.remaining_depth,
+                    quirks: self.de.quirks.clone(),
                 };
                 self.len += 1;
                 seed.deserialize(&mut element_de).map(Some)
@@ -797,6 +836,7 @@ impl<'de, 'a, 'r> de::MapAccess<'de> for MapAccess<'a, 'r> {
                 }
             },
             remaining_depth: self.de.remaining_depth,
+            quirks: self.de.quirks.clone(),
         };
         seed.deserialize(&mut value_de)
     }
@@ -855,6 +895,7 @@ impl<'de, 'a, 'r> de::EnumAccess<'de> for EnumAccess<'a, 'r> {
                 key: variant,
             },
             remaining_depth: self.de.remaining_depth,
+            quirks: self.de.quirks.clone(),
         };
         Ok((ret, variant_visitor))
     }
@@ -943,7 +984,7 @@ impl<'de, 'a, 'r> de::VariantAccess<'de> for UnitVariantAccess<'a, 'r> {
     }
 }
 
-fn visit_untagged_str<'de, V>(visitor: V, v: &str) -> Result<V::Value>
+fn visit_untagged_str<'de, V>(visitor: V, quirks: &DeserializingQuirks, v: &str) -> Result<V::Value>
 where
     V: Visitor<'de>,
 {
@@ -997,6 +1038,11 @@ where
         // with leading zero(s) followed by numeric characters this is in fact a
         // string according to the YAML 1.2 spec.
         // https://yaml.org/spec/1.2/spec.html#id2761292
+        if quirks.old_octals {
+            if let Ok(n) = u64::from_str_radix(&v[1..], 8) {
+                return visitor.visit_u64(n);
+            }
+        }
         return visitor.visit_str(v);
     }
     if let Ok(n) = v.parse() {
@@ -1041,7 +1087,7 @@ fn trim_start_matches(s: &str, pat: char) -> &str {
     s.trim_left_matches(pat)
 }
 
-fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
+fn invalid_type(event: &Event, exp: &dyn Expected, quirks: &DeserializingQuirks) -> Error {
     enum Void {}
 
     struct InvalidType<'a> {
@@ -1060,7 +1106,7 @@ fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
         Event::Alias(_) => unreachable!(),
         Event::Scalar(v, style, tag) => {
             let get_type = InvalidType { exp };
-            match visit_scalar(v, *style, tag, get_type) {
+            match visit_scalar(v, *style, tag, get_type, quirks) {
                 Ok(void) => match void {},
                 Err(invalid_type) => invalid_type,
             }
@@ -1080,8 +1126,8 @@ impl<'a> DeserializerFromEvents<'a> {
         let (next, marker) = self.next()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_scalar(visitor),
-            Event::Scalar(v, style, tag) => visit_scalar(v, *style, tag, visitor),
-            other => Err(invalid_type(other, &visitor)),
+            Event::Scalar(v, style, tag) => visit_scalar(v, *style, tag, visitor, &self.quirks),
+            other => Err(invalid_type(other, &visitor, &self.quirks)),
         }
         .map_err(|err| error::fix_marker(err, marker, self.path))
     }
@@ -1097,7 +1143,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
         let (next, marker) = self.next()?;
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_any(visitor),
-            Event::Scalar(v, style, tag) => visit_scalar(v, *style, tag, visitor),
+            Event::Scalar(v, style, tag) => visit_scalar(v, *style, tag, visitor, &self.quirks),
             Event::SequenceStart => self.visit_sequence(visitor),
             Event::MappingStart => self.visit_mapping(visitor),
             Event::SequenceEnd => panic!("unexpected end of sequence"),
@@ -1218,7 +1264,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
         match next {
             Event::Scalar(v, _, _) => visitor.visit_str(v),
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_str(visitor),
-            other => Err(invalid_type(other, &visitor)),
+            other => Err(invalid_type(other, &visitor, &self.quirks)),
         }
         .map_err(|err: Error| error::fix_marker(err, marker, self.path))
     }
@@ -1313,7 +1359,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_seq(visitor),
             Event::SequenceStart => self.visit_sequence(visitor),
-            other => Err(invalid_type(other, &visitor)),
+            other => Err(invalid_type(other, &visitor, &self.quirks)),
         }
         .map_err(|err| error::fix_marker(err, marker, self.path))
     }
@@ -1345,7 +1391,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
         match next {
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_map(visitor),
             Event::MappingStart => self.visit_mapping(visitor),
-            other => Err(invalid_type(other, &visitor)),
+            other => Err(invalid_type(other, &visitor, &self.quirks)),
         }
         .map_err(|err| error::fix_marker(err, marker, self.path))
     }
@@ -1366,7 +1412,7 @@ impl<'de, 'a, 'r> de::Deserializer<'de> for &'r mut DeserializerFromEvents<'a> {
                 .deserialize_struct(name, fields, visitor),
             Event::SequenceStart => self.visit_sequence(visitor),
             Event::MappingStart => self.visit_mapping(visitor),
-            other => Err(invalid_type(other, &visitor)),
+            other => Err(invalid_type(other, &visitor, &self.quirks)),
         }
         .map_err(|err| error::fix_marker(err, marker, self.path))
     }

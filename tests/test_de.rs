@@ -1,7 +1,7 @@
 #![allow(clippy::cast_lossless, clippy::cast_possible_wrap)]
 
 use indoc::indoc;
-use serde::serde_if_integer128;
+use serde::{Deserialize, serde_if_integer128};
 use serde_derive::Deserialize;
 use serde_yaml::Value;
 use std::collections::BTreeMap;
@@ -345,6 +345,15 @@ fn test_numbers() {
             _ => panic!("expected number"),
         }
     }
+}
+
+#[test]
+fn test_quirk_old_octals() {
+    let de = serde_yaml::Deserializer::from_str_with_quirks("0777", serde_yaml::DeserializingQuirks {
+        old_octals: true,
+    });
+    let value = u64::deserialize(de).unwrap();
+    assert_eq!(value, 0o777);
 }
 
 #[test]
