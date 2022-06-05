@@ -1,10 +1,10 @@
-Serde YAML
+Serde YAML (with quirks)
 ==========
 
-[<img alt="github" src="https://img.shields.io/badge/github-dtolnay/serde--yaml-8da0cb?style=for-the-badge&labelColor=555555&logo=github" height="20">](https://github.com/dtolnay/serde-yaml)
-[<img alt="crates.io" src="https://img.shields.io/crates/v/serde_yaml.svg?style=for-the-badge&color=fc8d62&logo=rust" height="20">](https://crates.io/crates/serde_yaml)
-[<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-serde__yaml-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/serde_yaml)
-[<img alt="build status" src="https://img.shields.io/github/actions/workflow/status/dtolnay/serde-yaml/ci.yml?branch=master&style=for-the-badge" height="20">](https://github.com/dtolnay/serde-yaml/actions?query=branch%3Amaster)
+This fork of serde-yaml implements golang-compatible octal parsing quirk, this feature
+was not accepted in upstream, but is required in jrsonnet for golang implementation compatibility
+
+See here: https://github.com/dtolnay/serde-yaml/pull/225
 
 Rust library for using the [Serde] serialization framework with data in [YAML]
 file format. _(This project is no longer maintained.)_
