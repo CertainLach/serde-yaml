@@ -57,6 +57,17 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 /// ```
 pub struct Deserializer<'de> {
     progress: Progress<'de>,
+    quirks: DeserializingQuirks,
+}
+
+/// Handling of nonstandard yaml features
+#[derive(Default, Clone)]
+pub struct DeserializingQuirks {
+    /// Support yaml 1.1 octal literal
+    ///
+    /// I.e 0123 should be deserialized as string "0123" in yaml 1.2,
+    /// but some yaml parsers deserialize it as number 83 per yaml 1.1 spec
+    pub old_octals: bool,
 }
 
 pub(crate) enum Progress<'de> {
@@ -69,16 +80,35 @@ pub(crate) enum Progress<'de> {
 }
 
 impl<'de> Deserializer<'de> {
+    /// Creates a YAML deserializer from a `&str` and set quirks.
+    pub fn from_str_with_quirks(s: &'de str, quirks: DeserializingQuirks) -> Self {
+        let progress = Progress::Str(s);
+        Deserializer { progress, quirks }
+    }
+
     /// Creates a YAML deserializer from a `&str`.
     pub fn from_str(s: &'de str) -> Self {
-        let progress = Progress::Str(s);
-        Deserializer { progress }
+        Self::from_str_with_quirks(s, Default::default())
+    }
+
+    /// Creates a YAML deserializer from a `&[u8]` and set quirks.
+    pub fn from_slice_with_quirks(v: &'de [u8], quirks: DeserializingQuirks) -> Self {
+        let progress = Progress::Slice(v);
+        Deserializer { progress, quirks }
     }
 
     /// Creates a YAML deserializer from a `&[u8]`.
     pub fn from_slice(v: &'de [u8]) -> Self {
-        let progress = Progress::Slice(v);
-        Deserializer { progress }
+        Self::from_slice_with_quirks(v, Default::default())
+    }
+
+    /// Creates a YAML deserializer from an `io::Read` and set quirks.
+    pub fn from_reader_with_quirks<R>(rdr: R, quirks: DeserializingQuirks) -> Self
+    where
+        R: io::Read + 'de,
+    {
+        let progress = Progress::Read(Box::new(rdr));
+        Deserializer { progress, quirks }
     }
 
     /// Creates a YAML deserializer from an `io::Read`.
@@ -90,8 +120,7 @@ impl<'de> Deserializer<'de> {
     where
         R: io::Read + 'de,
     {
-        let progress = Progress::Read(Box::new(rdr));
-        Deserializer { progress }
+        Self::from_reader_with_quirks(rdr, Default::default())
     }
 
     fn de<T>(
@@ -111,6 +140,7 @@ impl<'de> Deserializer<'de> {
                     path: Path::Root,
                     remaining_depth: 128,
                     current_enum: None,
+                    quirks: self.quirks.clone(),
                 })?;
                 if let Some(parse_error) = document.error {
                     return Err(error::shared(parse_error));
@@ -132,6 +162,7 @@ impl<'de> Deserializer<'de> {
             path: Path::Root,
             remaining_depth: 128,
             current_enum: None,
+            quirks: self.quirks.clone(),
         })?;
         if let Some(parse_error) = document.error {
             return Err(error::shared(parse_error));
@@ -153,12 +184,14 @@ impl<'de> Iterator for Deserializer<'de> {
                 let document = loader.next_document()?;
                 return Some(Deserializer {
                     progress: Progress::Document(document),
+                    quirks: self.quirks.clone(),
                 });
             }
             Progress::Document(_) => return None,
             Progress::Fail(err) => {
                 return Some(Deserializer {
                     progress: Progress::Fail(Arc::clone(err)),
+                    quirks: self.quirks.clone(),
                 });
             }
             _ => {}
@@ -176,6 +209,7 @@ impl<'de> Iterator for Deserializer<'de> {
                 self.progress = Progress::Fail(Arc::clone(&fail));
                 Some(Deserializer {
                     progress: Progress::Fail(fail),
+                    quirks: self.quirks.clone(),
                 })
             }
         }
@@ -436,6 +470,7 @@ struct DeserializerFromEvents<'de, 'document> {
     path: Path<'document>,
     remaining_depth: u8,
     current_enum: Option<CurrentEnum<'document>>,
+    quirks: DeserializingQuirks,
 }
 
 #[derive(Copy, Clone)]
@@ -489,6 +524,7 @@ impl<'de, 'document> DeserializerFromEvents<'de, 'document> {
                     path: Path::Alias { parent: &self.path },
                     remaining_depth: self.remaining_depth,
                     current_enum: None,
+                    quirks: self.quirks.clone(),
                 })
             }
             None => panic!("unresolved alias: {}", *pos),
@@ -674,6 +710,7 @@ impl<'de, 'document, 'seq> de::SeqAccess<'de> for SeqAccess<'de, 'document, 'seq
                     },
                     remaining_depth: self.de.remaining_depth,
                     current_enum: None,
+                    quirks: self.de.quirks.clone(),
                 };
                 self.len += 1;
                 seed.deserialize(&mut element_de).map(Some)
@@ -734,6 +771,7 @@ impl<'de, 'document, 'map> de::MapAccess<'de> for MapAccess<'de, 'document, 'map
             },
             remaining_depth: self.de.remaining_depth,
             current_enum: None,
+            quirks: self.de.quirks.clone(),
         };
         seed.deserialize(&mut value_de)
     }
@@ -765,6 +803,7 @@ impl<'de, 'document, 'variant> de::EnumAccess<'de> for EnumAccess<'de, 'document
                 name: self.name,
                 tag: self.tag,
             }),
+            quirks: self.de.quirks.clone(),
         };
         Ok((variant, visitor))
     }
@@ -855,7 +894,7 @@ impl<'de, 'document, 'variant> de::VariantAccess<'de>
     }
 }
 
-fn visit_scalar<'de, V>(visitor: V, scalar: &Scalar<'de>, tagged_already: bool) -> Result<V::Value>
+fn visit_scalar<'de, V>(visitor: V, scalar: &Scalar<'de>, tagged_already: bool, quirks: &DeserializingQuirks) -> Result<V::Value>
 where
     V: Visitor<'de>,
 {
@@ -875,7 +914,7 @@ where
                 None => Err(de::Error::invalid_value(Unexpected::Str(v), &"a boolean")),
             };
         } else if tag == Tag::INT {
-            return match visit_int(visitor, v) {
+            return match visit_int(visitor, v, quirks) {
                 Ok(result) => result,
                 Err(_) => Err(de::Error::invalid_value(Unexpected::Str(v), &"an integer")),
             };
@@ -890,10 +929,10 @@ where
                 None => Err(de::Error::invalid_value(Unexpected::Str(v), &"null")),
             };
         } else if tag.starts_with("!") && scalar.style == ScalarStyle::Plain {
-            return visit_untagged_scalar(visitor, v, scalar.repr, scalar.style);
+            return visit_untagged_scalar(visitor, v, scalar.repr, scalar.style, &quirks);
         }
     } else if scalar.style == ScalarStyle::Plain {
-        return visit_untagged_scalar(visitor, v, scalar.repr, scalar.style);
+        return visit_untagged_scalar(visitor, v, scalar.repr, scalar.style, quirks);
     }
     if let Some(borrowed) = parse_borrowed_str(v, scalar.repr, scalar.style) {
         visitor.visit_borrowed_str(borrowed)
@@ -940,6 +979,7 @@ fn parse_bool(scalar: &str) -> Option<bool> {
 fn parse_unsigned_int<T>(
     scalar: &str,
     from_str_radix: fn(&str, radix: u32) -> Result<T, ParseIntError>,
+    quirks: &DeserializingQuirks,
 ) -> Option<T> {
     let unpositive = scalar.strip_prefix('+').unwrap_or(scalar);
     if let Some(rest) = unpositive.strip_prefix("0x") {
@@ -969,7 +1009,10 @@ fn parse_unsigned_int<T>(
     if unpositive.starts_with(['+', '-']) {
         return None;
     }
-    if digits_but_not_number(scalar) {
+    if legacy_octal(scalar) {
+        if quirks.old_octals {
+            return from_str_radix(&scalar, 8).ok()
+        }
         return None;
     }
     from_str_radix(unpositive, 10).ok()
@@ -978,6 +1021,7 @@ fn parse_unsigned_int<T>(
 fn parse_signed_int<T>(
     scalar: &str,
     from_str_radix: fn(&str, radix: u32) -> Result<T, ParseIntError>,
+    quirks: &DeserializingQuirks,
 ) -> Option<T> {
     let unpositive = if let Some(unpositive) = scalar.strip_prefix('+') {
         if unpositive.starts_with(['+', '-']) {
@@ -1029,7 +1073,10 @@ fn parse_signed_int<T>(
             return Some(int);
         }
     }
-    if digits_but_not_number(scalar) {
+    if legacy_octal(scalar) {
+        if quirks.old_octals {
+            return from_str_radix(&scalar, 8).ok()
+        }
         return None;
     }
     from_str_radix(unpositive, 10).ok()
@@ -1038,6 +1085,7 @@ fn parse_signed_int<T>(
 fn parse_negative_int<T>(
     scalar: &str,
     from_str_radix: fn(&str, radix: u32) -> Result<T, ParseIntError>,
+    quirks: &DeserializingQuirks,
 ) -> Option<T> {
     if let Some(rest) = scalar.strip_prefix("-0x") {
         let negative = format!("-{}", rest);
@@ -1057,7 +1105,10 @@ fn parse_negative_int<T>(
             return Some(int);
         }
     }
-    if digits_but_not_number(scalar) {
+    if legacy_octal(scalar) {
+        if quirks.old_octals {
+            return from_str_radix(&scalar, 8).ok()
+        }
         return None;
     }
     from_str_radix(scalar, 10).ok()
@@ -1089,27 +1140,27 @@ pub(crate) fn parse_f64(scalar: &str) -> Option<f64> {
     None
 }
 
-pub(crate) fn digits_but_not_number(scalar: &str) -> bool {
+pub(crate) fn legacy_octal(scalar: &str) -> bool {
     // Leading zero(s) followed by numeric characters is a string according to
     // the YAML 1.2 spec. https://yaml.org/spec/1.2/spec.html#id2761292
     let scalar = scalar.strip_prefix(['-', '+']).unwrap_or(scalar);
     scalar.len() > 1 && scalar.starts_with('0') && scalar[1..].bytes().all(|b| b.is_ascii_digit())
 }
 
-pub(crate) fn visit_int<'de, V>(visitor: V, v: &str) -> Result<Result<V::Value>, V>
+pub(crate) fn visit_int<'de, V>(visitor: V, v: &str, quirks: &DeserializingQuirks) -> Result<Result<V::Value>, V>
 where
     V: Visitor<'de>,
 {
-    if let Some(int) = parse_unsigned_int(v, u64::from_str_radix) {
+    if let Some(int) = parse_unsigned_int(v, u64::from_str_radix, quirks) {
         return Ok(visitor.visit_u64(int));
     }
-    if let Some(int) = parse_negative_int(v, i64::from_str_radix) {
+    if let Some(int) = parse_negative_int(v, i64::from_str_radix, quirks) {
         return Ok(visitor.visit_i64(int));
     }
-    if let Some(int) = parse_unsigned_int(v, u128::from_str_radix) {
+    if let Some(int) = parse_unsigned_int(v, u128::from_str_radix, quirks) {
         return Ok(visitor.visit_u128(int));
     }
-    if let Some(int) = parse_negative_int(v, i128::from_str_radix) {
+    if let Some(int) = parse_negative_int(v, i128::from_str_radix, quirks) {
         return Ok(visitor.visit_i128(int));
     }
     Err(visitor)
@@ -1120,6 +1171,7 @@ pub(crate) fn visit_untagged_scalar<'de, V>(
     v: &str,
     repr: Option<&'de [u8]>,
     style: ScalarStyle,
+    quirks: &DeserializingQuirks,
 ) -> Result<V::Value>
 where
     V: Visitor<'de>,
@@ -1130,11 +1182,11 @@ where
     if let Some(boolean) = parse_bool(v) {
         return visitor.visit_bool(boolean);
     }
-    let visitor = match visit_int(visitor, v) {
+    let visitor = match visit_int(visitor, v, quirks) {
         Ok(result) => return result,
         Err(visitor) => visitor,
     };
-    if !digits_but_not_number(v) {
+    if !legacy_octal(v) {
         if let Some(float) = parse_f64(v) {
             return visitor.visit_f64(float);
         }
@@ -1158,7 +1210,7 @@ fn is_plain_or_tagged_literal_scalar(
     }
 }
 
-fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
+fn invalid_type(event: &Event, exp: &dyn Expected, quirks: &DeserializingQuirks) -> Error {
     enum Void {}
 
     struct InvalidType<'a> {
@@ -1177,7 +1229,7 @@ fn invalid_type(event: &Event, exp: &dyn Expected) -> Error {
         Event::Alias(_) => unreachable!(),
         Event::Scalar(scalar) => {
             let get_type = InvalidType { exp };
-            match visit_scalar(get_type, scalar, false) {
+            match visit_scalar(get_type, scalar, false, quirks) {
                 Ok(void) => match void {},
                 Err(invalid_type) => invalid_type,
             }
@@ -1229,7 +1281,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                             tag,
                         });
                     }
-                    break visit_scalar(visitor, scalar, tagged_already);
+                    break visit_scalar(visitor, scalar, tagged_already, &self.quirks);
                 }
                 Event::SequenceStart(sequence) => {
                     if let Some(tag) = enum_tag(&sequence.tag, tagged_already) {
@@ -1283,7 +1335,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                 }
                 _ => {}
             }
-            break Err(invalid_type(next, &visitor));
+            break Err(invalid_type(next, &visitor, &self.quirks));
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
     }
@@ -1322,14 +1374,14 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                     if is_plain_or_tagged_literal_scalar(Tag::INT, scalar, tagged_already) =>
                 {
                     if let Ok(value) = str::from_utf8(&scalar.value) {
-                        if let Some(int) = parse_signed_int(value, i64::from_str_radix) {
+                        if let Some(int) = parse_signed_int(value, i64::from_str_radix, &self.quirks) {
                             break visitor.visit_i64(int);
                         }
                     }
                 }
                 _ => {}
             }
-            break Err(invalid_type(next, &visitor));
+            break Err(invalid_type(next, &visitor, &self.quirks));
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
     }
@@ -1347,14 +1399,14 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                     if is_plain_or_tagged_literal_scalar(Tag::INT, scalar, tagged_already) =>
                 {
                     if let Ok(value) = str::from_utf8(&scalar.value) {
-                        if let Some(int) = parse_signed_int(value, i128::from_str_radix) {
+                        if let Some(int) = parse_signed_int(value, i128::from_str_radix, &self.quirks) {
                             break visitor.visit_i128(int);
                         }
                     }
                 }
                 _ => {}
             }
-            break Err(invalid_type(next, &visitor));
+            break Err(invalid_type(next, &visitor, &self.quirks));
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
     }
@@ -1393,14 +1445,14 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                     if is_plain_or_tagged_literal_scalar(Tag::INT, scalar, tagged_already) =>
                 {
                     if let Ok(value) = str::from_utf8(&scalar.value) {
-                        if let Some(int) = parse_unsigned_int(value, u64::from_str_radix) {
+                        if let Some(int) = parse_unsigned_int(value, u64::from_str_radix, &self.quirks) {
                             break visitor.visit_u64(int);
                         }
                     }
                 }
                 _ => {}
             }
-            break Err(invalid_type(next, &visitor));
+            break Err(invalid_type(next, &visitor, &self.quirks));
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
     }
@@ -1418,14 +1470,14 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                     if is_plain_or_tagged_literal_scalar(Tag::INT, scalar, tagged_already) =>
                 {
                     if let Ok(value) = str::from_utf8(&scalar.value) {
-                        if let Some(int) = parse_unsigned_int(value, u128::from_str_radix) {
+                        if let Some(int) = parse_unsigned_int(value, u128::from_str_radix, &self.quirks) {
                             break visitor.visit_u128(int);
                         }
                     }
                 }
                 _ => {}
             }
-            break Err(invalid_type(next, &visitor));
+            break Err(invalid_type(next, &visitor, &self.quirks));
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
     }
@@ -1457,7 +1509,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                 }
                 _ => {}
             }
-            break Err(invalid_type(next, &visitor));
+            break Err(invalid_type(next, &visitor, &self.quirks));
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
     }
@@ -1483,11 +1535,11 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                         visitor.visit_str(v)
                     }
                 } else {
-                    Err(invalid_type(next, &visitor))
+                    Err(invalid_type(next, &visitor, &self.quirks))
                 }
             }
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_str(visitor),
-            other => Err(invalid_type(other, &visitor)),
+            other => Err(invalid_type(other, &visitor, &self.quirks)),
         }
         .map_err(|err: Error| error::fix_mark(err, mark, self.path))
     }
@@ -1588,7 +1640,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
             }
             Event::Alias(mut pos) => self.jump(&mut pos)?.deserialize_unit(visitor),
             Event::Void => visitor.visit_unit(),
-            other => Err(invalid_type(other, &visitor)),
+            other => Err(invalid_type(other, &visitor, &self.quirks)),
         }
         .map_err(|err| error::fix_mark(err, mark, self.path))
     }
@@ -1631,7 +1683,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                         len: 0,
                     })
                 } else {
-                    Err(invalid_type(other, &visitor))
+                    Err(invalid_type(other, &visitor, &self.quirks))
                 }
             }
         }
@@ -1680,7 +1732,7 @@ impl<'de, 'document> de::Deserializer<'de> for &mut DeserializerFromEvents<'de, 
                         key: None,
                     })
                 } else {
-                    Err(invalid_type(other, &visitor))
+                    Err(invalid_type(other, &visitor, &self.quirks))
                 }
             }
         }

@@ -314,10 +314,10 @@ impl FromStr for Number {
     type Err = Error;
 
     fn from_str(repr: &str) -> Result<Self, Self::Err> {
-        if let Ok(result) = de::visit_int(NumberVisitor, repr) {
+        if let Ok(result) = de::visit_int(NumberVisitor, repr, &Default::default()) {
             return result;
         }
-        if !de::digits_but_not_number(repr) {
+        if !de::legacy_octal(repr) {
             if let Some(float) = de::parse_f64(repr) {
                 return Ok(float.into());
             }

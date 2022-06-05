@@ -340,7 +340,7 @@ where
             }
 
             fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> {
-                Ok(if crate::de::digits_but_not_number(v) {
+                Ok(if crate::de::legacy_octal(v) {
                     ScalarStyle::SingleQuoted
                 } else {
                     ScalarStyle::Any
@@ -360,6 +360,7 @@ where
                 value,
                 None,
                 libyaml::parser::ScalarStyle::Plain,
+                &Default::default(),
             );
             result.unwrap_or(ScalarStyle::Any)
         };
