@@ -15,6 +15,7 @@
 //! # Examples
 //!
 //! ```
+//! extern crate serde_yaml_with_quirks as serde_yaml;
 //! use std::collections::BTreeMap;
 //!
 //! fn main() -> Result<(), serde_yaml::Error> {
@@ -42,6 +43,7 @@
 //! Structs serialize in the obvious way:
 //!
 //! ```
+//! extern crate serde_yaml_with_quirks as serde_yaml;
 //! # use serde_derive::{Serialize, Deserialize};
 //! use serde::{Serialize, Deserialize};
 //!
@@ -66,6 +68,7 @@
 //! Enums serialize using YAML's `!tag` syntax to identify the variant name.
 //!
 //! ```
+//! extern crate serde_yaml_with_quirks as serde_yaml;
 //! # use serde_derive::{Serialize, Deserialize};
 //! use serde::{Serialize, Deserialize};
 //!
@@ -159,6 +162,8 @@
     clippy::missing_errors_doc,
     clippy::must_use_candidate,
 )]
+
+extern crate self as serde_yaml;
 
 pub use crate::de::{from_reader, from_slice, from_str, Deserializer, DeserializingQuirks};
 pub use crate::error::{Error, Location, Result};

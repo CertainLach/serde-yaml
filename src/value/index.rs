@@ -216,6 +216,7 @@ where
     /// # Examples
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// #
     /// # fn main() -> serde_yaml::Result<()> {
@@ -254,6 +255,7 @@ where
     /// # Examples
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # fn main() -> serde_yaml::Result<()> {
     /// let mut data: serde_yaml::Value = serde_yaml::from_str(r#"{x: 0}"#)?;
     ///

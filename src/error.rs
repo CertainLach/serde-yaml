@@ -89,6 +89,7 @@ impl Error {
     /// # Examples
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::{Value, Error};
     /// #
     /// // The `@` character as the first character makes this invalid yaml

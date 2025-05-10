@@ -41,6 +41,7 @@ impl Serialize for Value {
 /// The `to_value` function is implementable as:
 ///
 /// ```
+/// extern crate serde_yaml_with_quirks as serde_yaml;
 /// use serde::Serialize;
 /// use serde_yaml::{Error, Value};
 ///

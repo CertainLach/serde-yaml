@@ -27,6 +27,7 @@ impl From<bool> for Value {
     /// # Examples
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// use serde_yaml::Value;
     ///
     /// let b = false;
@@ -43,6 +44,7 @@ impl From<String> for Value {
     /// # Examples
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// use serde_yaml::Value;
     ///
     /// let s: String = "lorem".to_string();
@@ -59,6 +61,7 @@ impl<'a> From<&'a str> for Value {
     /// # Examples
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// use serde_yaml::Value;
     ///
     /// let s: &str = "lorem";
@@ -77,6 +80,7 @@ impl<'a> From<Cow<'a, str>> for Value {
     /// # Examples
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// use serde_yaml::Value;
     /// use std::borrow::Cow;
     ///
@@ -85,6 +89,7 @@ impl<'a> From<Cow<'a, str>> for Value {
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// use serde_yaml::Value;
     /// use std::borrow::Cow;
     ///
@@ -102,6 +107,7 @@ impl From<Mapping> for Value {
     /// # Examples
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// use serde_yaml::{Mapping, Value};
     ///
     /// let mut m = Mapping::new();
@@ -119,6 +125,7 @@ impl<T: Into<Value>> From<Vec<T>> for Value {
     /// # Examples
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// use serde_yaml::Value;
     ///
     /// let v = vec!["lorem", "ipsum", "dolor"];
@@ -135,6 +142,7 @@ impl<'a, T: Clone + Into<Value>> From<&'a [T]> for Value {
     /// # Examples
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// use serde_yaml::Value;
     ///
     /// let v: &[&str] = &["lorem", "ipsum", "dolor"];
@@ -151,6 +159,7 @@ impl<T: Into<Value>> FromIterator<T> for Value {
     /// # Examples
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// use serde_yaml::Value;
     ///
     /// let v = std::iter::repeat(42).take(5);
@@ -158,6 +167,7 @@ impl<T: Into<Value>> FromIterator<T> for Value {
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// use serde_yaml::Value;
     ///
     /// let v: Vec<_> = vec!["lorem", "ipsum", "dolor"];
@@ -165,6 +175,7 @@ impl<T: Into<Value>> FromIterator<T> for Value {
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// use std::iter::FromIterator;
     /// use serde_yaml::Value;
     ///

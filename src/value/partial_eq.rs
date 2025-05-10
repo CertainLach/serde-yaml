@@ -6,6 +6,7 @@ impl PartialEq<str> for Value {
     /// # Examples
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// assert!(Value::String("lorem".into()) == *"lorem");
     /// ```
@@ -20,6 +21,7 @@ impl<'a> PartialEq<&'a str> for Value {
     /// # Examples
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// assert!(Value::String("lorem".into()) == "lorem");
     /// ```
@@ -34,6 +36,7 @@ impl PartialEq<String> for Value {
     /// # Examples
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// assert!(Value::String("lorem".into()) == "lorem".to_string());
     /// ```
@@ -48,6 +51,7 @@ impl PartialEq<bool> for Value {
     /// # Examples
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// assert!(Value::Bool(true) == true);
     /// ```

@@ -3,6 +3,7 @@
     clippy::eq_op,
     clippy::uninlined_format_args
 )]
+extern crate serde_yaml_with_quirks as serde_yaml;
 
 use indoc::indoc;
 use serde::de::IntoDeserializer;

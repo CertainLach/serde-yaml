@@ -22,6 +22,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 /// # Example
 ///
 /// ```
+/// extern crate serde_yaml_with_quirks as serde_yaml;
 /// use anyhow::Result;
 /// use serde::Serialize;
 /// use std::collections::BTreeMap;

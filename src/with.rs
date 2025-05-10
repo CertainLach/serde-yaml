@@ -6,6 +6,7 @@
 /// # Example
 ///
 /// ```
+/// extern crate serde_yaml_with_quirks as serde_yaml;
 /// # use serde_derive::{Deserialize, Serialize};
 /// use serde::{Deserialize, Serialize};
 ///
@@ -840,6 +841,7 @@ pub mod singleton_map {
 /// # Example
 ///
 /// ```
+/// extern crate serde_yaml_with_quirks as serde_yaml;
 /// # use serde_derive::{Deserialize, Serialize};
 /// use serde::{Deserialize, Serialize};
 ///
@@ -900,6 +902,7 @@ pub mod singleton_map {
 /// call, without `serde(with = …)`, as follows.
 ///
 /// ```
+/// extern crate serde_yaml_with_quirks as serde_yaml;
 /// # use serde_derive::{Deserialize, Serialize};
 /// # use serde::{Deserialize, Serialize};
 /// #

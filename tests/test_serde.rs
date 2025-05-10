@@ -4,6 +4,7 @@
     clippy::unreadable_literal,
     clippy::shadow_unrelated
 )]
+extern crate serde_yaml_with_quirks as serde_yaml;
 
 use indoc::indoc;
 use serde::ser::SerializeMap;

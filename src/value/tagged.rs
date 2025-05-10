@@ -24,6 +24,7 @@ pub struct Tag {
 /// A `Tag` + `Value` representing a tagged YAML scalar, sequence, or mapping.
 ///
 /// ```
+/// extern crate serde_yaml_with_quirks as serde_yaml;
 /// use serde_yaml::value::TaggedValue;
 /// use std::collections::BTreeMap;
 ///
@@ -62,6 +63,7 @@ impl Tag {
     /// have to be. The following are equivalent:
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// use serde_yaml::value::Tag;
     ///
     /// assert_eq!(Tag::new("!Thing"), Tag::new("Thing"));

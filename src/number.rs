@@ -33,6 +33,7 @@ impl Number {
     /// return the integer value.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # fn main() -> serde_yaml::Result<()> {
     /// let big = i64::MAX as u64 + 10;
     /// let v: serde_yaml::Value = serde_yaml::from_str(r#"
@@ -67,6 +68,7 @@ impl Number {
     /// return the integer value.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # fn main() -> serde_yaml::Result<()> {
     /// let v: serde_yaml::Value = serde_yaml::from_str(r#"
     /// a: 64
@@ -101,6 +103,7 @@ impl Number {
     /// `is_u64` return false but this is not a guarantee in the future.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # fn main() -> serde_yaml::Result<()> {
     /// let v: serde_yaml::Value = serde_yaml::from_str(r#"
     /// a: 256.0
@@ -128,6 +131,7 @@ impl Number {
     /// None otherwise.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # fn main() -> serde_yaml::Result<()> {
     /// let big = i64::MAX as u64 + 10;
     /// let v: serde_yaml::Value = serde_yaml::from_str(r#"
@@ -161,6 +165,7 @@ impl Number {
     /// None otherwise.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # fn main() -> serde_yaml::Result<()> {
     /// let v: serde_yaml::Value = serde_yaml::from_str(r#"
     /// a: 64
@@ -185,6 +190,7 @@ impl Number {
     /// Represents the number as f64 if possible. Returns None otherwise.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # fn main() -> serde_yaml::Result<()> {
     /// let v: serde_yaml::Value = serde_yaml::from_str(r#"
     /// a: 256.0
@@ -200,6 +206,7 @@ impl Number {
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # fn main() -> serde_yaml::Result<()> {
     /// let v: serde_yaml::Value = serde_yaml::from_str(".inf")?;
     /// assert_eq!(v.as_f64(), Some(f64::INFINITY));
@@ -224,6 +231,7 @@ impl Number {
     /// Returns true if this value is NaN and false otherwise.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Number;
     /// #
     /// assert!(!Number::from(256.0).is_nan());
@@ -248,6 +256,7 @@ impl Number {
     /// false otherwise.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Number;
     /// #
     /// assert!(!Number::from(256.0).is_infinite());
@@ -271,6 +280,7 @@ impl Number {
     /// Returns true if this number is neither infinite nor NaN.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Number;
     /// #
     /// assert!(Number::from(256.0).is_finite());

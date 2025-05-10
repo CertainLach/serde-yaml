@@ -49,6 +49,7 @@ pub enum Value {
 /// # Examples
 ///
 /// ```
+/// extern crate serde_yaml_with_quirks as serde_yaml;
 /// # use serde_derive::Deserialize;
 /// use serde::Deserialize;
 /// use serde_yaml::Value;
@@ -88,6 +89,7 @@ pub type Sequence = Vec<Value>;
 /// return an error.
 ///
 /// ```
+/// extern crate serde_yaml_with_quirks as serde_yaml;
 /// # use serde_yaml::Value;
 /// let val = serde_yaml::to_value("s").unwrap();
 /// assert_eq!(val, Value::String("s".to_owned()));
@@ -110,6 +112,7 @@ where
 /// type.
 ///
 /// ```
+/// extern crate serde_yaml_with_quirks as serde_yaml;
 /// # use serde_yaml::Value;
 /// let val = Value::String("foo".to_owned());
 /// let s: String = serde_yaml::from_value(val).unwrap();
@@ -133,6 +136,7 @@ impl Value {
     /// or the given index is not within the bounds of the sequence.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # fn main() -> serde_yaml::Result<()> {
     /// use serde_yaml::Value;
     ///
@@ -154,6 +158,7 @@ impl Value {
     /// `None`.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// #
     /// # fn main() -> serde_yaml::Result<()> {
@@ -195,12 +200,14 @@ impl Value {
     /// to return `Some(())`.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("null").unwrap();
     /// assert!(v.is_null());
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert!(!v.is_null());
@@ -216,12 +223,14 @@ impl Value {
     /// If the `Value` is a Null, returns (). Returns None otherwise.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("null").unwrap();
     /// assert_eq!(v.as_null(), Some(()));
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_null(), None);
@@ -239,12 +248,14 @@ impl Value {
     /// guaranteed to return the boolean value.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("true").unwrap();
     /// assert!(v.is_bool());
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("42").unwrap();
     /// assert!(!v.is_bool());
@@ -257,12 +268,14 @@ impl Value {
     /// otherwise.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("true").unwrap();
     /// assert_eq!(v.as_bool(), Some(true));
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("42").unwrap();
     /// assert_eq!(v.as_bool(), None);
@@ -277,12 +290,14 @@ impl Value {
     /// Returns true if the `Value` is a Number. Returns false otherwise.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("5").unwrap();
     /// assert!(v.is_number());
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("true").unwrap();
     /// assert!(!v.is_number());
@@ -301,12 +316,14 @@ impl Value {
     /// return the integer value.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("1337").unwrap();
     /// assert!(v.is_i64());
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("null").unwrap();
     /// assert!(!v.is_i64());
@@ -319,12 +336,14 @@ impl Value {
     /// None otherwise.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("1337").unwrap();
     /// assert_eq!(v.as_i64(), Some(1337));
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_i64(), None);
@@ -343,12 +362,14 @@ impl Value {
     /// return the integer value.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("1337").unwrap();
     /// assert!(v.is_u64());
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("null").unwrap();
     /// assert!(!v.is_u64());
@@ -361,12 +382,14 @@ impl Value {
     /// None otherwise.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("1337").unwrap();
     /// assert_eq!(v.as_u64(), Some(1337));
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_u64(), None);
@@ -387,12 +410,14 @@ impl Value {
     /// `is_u64` return false but this is not a guarantee in the future.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("256.01").unwrap();
     /// assert!(v.is_f64());
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("true").unwrap();
     /// assert!(!v.is_f64());
@@ -408,12 +433,14 @@ impl Value {
     /// None otherwise.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("13.37").unwrap();
     /// assert_eq!(v.as_f64(), Some(13.37));
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_f64(), None);
@@ -431,12 +458,14 @@ impl Value {
     /// to return the string slice.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("'lorem ipsum'").unwrap();
     /// assert!(v.is_string());
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("42").unwrap();
     /// assert!(!v.is_string());
@@ -449,12 +478,14 @@ impl Value {
     /// otherwise.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("'lorem ipsum'").unwrap();
     /// assert_eq!(v.as_str(), Some("lorem ipsum"));
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_str(), None);
@@ -469,12 +500,14 @@ impl Value {
     /// Returns true if the `Value` is a sequence. Returns false otherwise.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("[1, 2, 3]").unwrap();
     /// assert!(v.is_sequence());
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("true").unwrap();
     /// assert!(!v.is_sequence());
@@ -487,12 +520,14 @@ impl Value {
     /// Returns None otherwise.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::{Value, Number};
     /// let v: Value = serde_yaml::from_str("[1, 2]").unwrap();
     /// assert_eq!(v.as_sequence(), Some(&vec![Value::Number(Number::from(1)), Value::Number(Number::from(2))]));
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_sequence(), None);
@@ -508,6 +543,7 @@ impl Value {
     /// possible. Returns None otherwise.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::{Value, Number};
     /// let mut v: Value = serde_yaml::from_str("[1]").unwrap();
     /// let s = v.as_sequence_mut().unwrap();
@@ -516,6 +552,7 @@ impl Value {
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let mut v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_sequence_mut(), None);
@@ -530,12 +567,14 @@ impl Value {
     /// Returns true if the `Value` is a mapping. Returns false otherwise.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("a: 42").unwrap();
     /// assert!(v.is_mapping());
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("true").unwrap();
     /// assert!(!v.is_mapping());
@@ -548,6 +587,7 @@ impl Value {
     /// Returns None otherwise.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::{Value, Mapping, Number};
     /// let v: Value = serde_yaml::from_str("a: 42").unwrap();
     ///
@@ -558,6 +598,7 @@ impl Value {
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::Value;
     /// let v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_mapping(), None);
@@ -573,6 +614,7 @@ impl Value {
     /// Returns None otherwise.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::{Value, Mapping, Number};
     /// let mut v: Value = serde_yaml::from_str("a: 42").unwrap();
     /// let m = v.as_mapping_mut().unwrap();
@@ -586,6 +628,7 @@ impl Value {
     /// ```
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// # use serde_yaml::{Value, Mapping};
     /// let mut v: Value = serde_yaml::from_str("false").unwrap();
     /// assert_eq!(v.as_mapping_mut(), None);
@@ -603,6 +646,7 @@ impl Value {
     /// <https://yaml.org/type/merge.html>.
     ///
     /// ```
+    /// extern crate serde_yaml_with_quirks as serde_yaml;
     /// use serde_yaml::Value;
     ///
     /// let config = "\

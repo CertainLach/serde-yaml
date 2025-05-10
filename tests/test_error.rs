@@ -1,4 +1,5 @@
 #![allow(clippy::zero_sized_map_values)]
+extern crate serde_yaml_with_quirks as serde_yaml;
 
 use indoc::indoc;
 use serde::de::Deserialize;

@@ -24,6 +24,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 /// Deserializing a single document:
 ///
 /// ```
+/// extern crate serde_yaml_with_quirks as serde_yaml;
 /// use anyhow::Result;
 /// use serde::Deserialize;
 /// use serde_yaml::Value;
@@ -40,6 +41,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 /// Deserializing multi-doc YAML:
 ///
 /// ```
+/// extern crate serde_yaml_with_quirks as serde_yaml;
 /// use anyhow::Result;
 /// use serde::Deserialize;
 /// use serde_yaml::Value;
